@@ -62,14 +62,23 @@ func (r dockerFetcher) Fetch(ctx context.Context, desc ocispec.Descriptor) (io.R
 			}
 			log.G(ctx).Debug("trying alternative url")
 
-			// Try this first, parse it
-			host := RegistryHost{
-				Client:       http.DefaultClient,
-				Host:         u.Host,
-				Scheme:       u.Scheme,
-				Path:         u.Path,
-				Capabilities: HostCapabilityPull,
+			var host RegistryHost
+			for _, h := range r.hosts {
+				if h.Host == u.Host {
+					host = h
+				}
 			}
+
+			if host.Host == "" {
+				host = RegistryHost{
+					Client:       http.DefaultClient,
+					Host:         u.Host,
+					Scheme:       u.Scheme,
+					Path:         u.Path,
+					Capabilities: HostCapabilityPull,
+				}
+			}
+
 			req := r.request(host, http.MethodGet)
 			// Strip namespace from base
 			req.path = u.Path
